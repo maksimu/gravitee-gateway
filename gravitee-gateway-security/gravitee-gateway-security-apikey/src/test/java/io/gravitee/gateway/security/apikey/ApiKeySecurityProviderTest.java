@@ -20,13 +20,20 @@ import io.gravitee.common.util.LinkedMultiValueMap;
 import io.gravitee.common.util.MultiValueMap;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.security.core.SecurityPolicy;
+import io.gravitee.gateway.policy.Policy;
+import io.gravitee.gateway.policy.PolicyManager;
+import io.gravitee.gateway.policy.StreamType;
+import io.gravitee.gateway.security.apikey.policy.DummyApiKeyPolicy;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,15 +42,14 @@ import static org.mockito.Mockito.when;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
+@RunWith(MockitoJUnitRunner.class)
 public class ApiKeySecurityProviderTest {
 
-    private ApiKeySecurityProvider securityProvider;
+    @InjectMocks
+    private ApiKeySecurityProvider securityProvider = new ApiKeySecurityProvider();
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-        securityProvider = new ApiKeySecurityProvider();
-    }
+    @Mock
+    private PolicyManager policyManager;
 
     @Test
     public void shouldNotHandleRequest() {
@@ -84,17 +90,20 @@ public class ApiKeySecurityProviderTest {
     }
 
     @Test
-    public void shouldReturnSingletonSecurityPolicy() {
+    public void shouldReturnPolicies() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
 
-        SecurityPolicy securityPolicy1 = securityProvider.create(executionContext);
-        SecurityPolicy securityPolicy2 = securityProvider.create(executionContext);
+        DummyApiKeyPolicy apiKeyPolicy = mock(DummyApiKeyPolicy.class);
+        when(policyManager.create(StreamType.ON_REQUEST, ApiKeySecurityProvider.API_KEY_POLICY, ApiKeySecurityProvider.API_KEY_POLICY_CONFIGURATION))
+                .thenReturn(apiKeyPolicy);
 
-        Assert.assertEquals(ApiKeySecurityProvider.POLICY, securityPolicy1);
-        Assert.assertEquals(ApiKeySecurityProvider.POLICY, securityPolicy2);
+        List<Policy> apikeyProviderPolicies = securityProvider.policies(executionContext);
 
-        Assert.assertEquals(ApiKeySecurityProvider.POLICY.policy(), ApiKeySecurityProvider.API_KEY_POLICY);
-        Assert.assertEquals(ApiKeySecurityProvider.POLICY.configuration(), ApiKeySecurityProvider.API_KEY_POLICY_CONFIGURATION);
+        Assert.assertEquals(1, apikeyProviderPolicies.size());
+
+        Policy policy = apikeyProviderPolicies.iterator().next();
+        Assert.assertThat(policy, IsInstanceOf.instanceOf(DummyApiKeyPolicy.class));
+        Assert.assertEquals(apiKeyPolicy, policy);
     }
 
     @Test

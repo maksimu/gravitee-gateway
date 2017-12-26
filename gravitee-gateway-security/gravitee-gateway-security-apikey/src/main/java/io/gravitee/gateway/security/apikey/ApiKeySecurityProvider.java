@@ -18,11 +18,15 @@ package io.gravitee.gateway.security.apikey;
 import io.gravitee.common.http.GraviteeHttpHeader;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.security.core.SecurityPolicy;
+import io.gravitee.gateway.policy.Policy;
+import io.gravitee.gateway.security.core.AbstractSecurityProvider;
 import io.gravitee.gateway.security.core.SecurityProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * An api-key based {@link SecurityProvider}.
@@ -30,7 +34,7 @@ import org.springframework.beans.factory.annotation.Value;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class ApiKeySecurityProvider implements SecurityProvider {
+public class ApiKeySecurityProvider extends AbstractSecurityProvider {
 
     private final Logger logger = LoggerFactory.getLogger(ApiKeySecurityProvider.class);
 
@@ -43,28 +47,10 @@ public class ApiKeySecurityProvider implements SecurityProvider {
     @Value("${policy.api-key.param:api-key}")
     private String apiKeyQueryParameter = "api-key";
 
-    static final SecurityPolicy POLICY = new SecurityPolicy() {
-        @Override
-        public String policy() {
-            return API_KEY_POLICY;
-        }
-
-        @Override
-        public String configuration() {
-            return API_KEY_POLICY_CONFIGURATION;
-        }
-    };
-
     @Override
     public boolean canHandle(Request request) {
         final String apiKey = lookForApiKey(request);
-
-        if (apiKey == null) {
-            logger.debug("No API Key has been found from the incoming requests. Skipping API Key authentication.");
-            return false;
-        }
-
-        return true;
+        return apiKey != null;
     }
 
     @Override
@@ -78,8 +64,14 @@ public class ApiKeySecurityProvider implements SecurityProvider {
     }
 
     @Override
-    public SecurityPolicy create(ExecutionContext executionContext) {
-        return POLICY;
+    public String configuration() {
+        return API_KEY_POLICY_CONFIGURATION;
+    }
+
+    @Override
+    public List<Policy> policies(ExecutionContext executionContext) {
+        return Collections.singletonList(
+                create(API_KEY_POLICY, configuration()));
     }
 
     private String lookForApiKey(Request request) {

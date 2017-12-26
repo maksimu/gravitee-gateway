@@ -13,25 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.gateway.policy;
+package io.gravitee.gateway.security.oauth2.policy;
 
-import io.gravitee.gateway.api.stream.ReadWriteStream;
+import io.gravitee.gateway.policy.AbstractPolicy;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface Policy {
-
-    default void onRequest(Object ... args) throws PolicyException {}
-
-    default void onResponse(Object ... args) throws PolicyException {}
-
-    default ReadWriteStream<?> onRequestContent(Object ... args) throws PolicyException { return null; }
-
-    default ReadWriteStream<?> onResponseContent(Object ... args) throws PolicyException { return null; }
-
-    default boolean isStreamable() { return false; }
-
-    default boolean isRunnable() { return true; }
+public class DummyOAuth2Policy extends AbstractPolicy {
 }

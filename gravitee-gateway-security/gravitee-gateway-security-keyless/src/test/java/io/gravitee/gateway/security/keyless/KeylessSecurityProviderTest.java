@@ -18,9 +18,19 @@ package io.gravitee.gateway.security.keyless;
 import io.gravitee.common.http.HttpHeaders;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.security.core.SecurityPolicy;
+import io.gravitee.gateway.policy.Policy;
+import io.gravitee.gateway.policy.PolicyManager;
+import io.gravitee.gateway.policy.StreamType;
+import io.gravitee.gateway.security.keyless.policy.DummyKeylessPolicy;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,8 +39,13 @@ import static org.mockito.Mockito.when;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
+@RunWith(MockitoJUnitRunner.class)
 public class KeylessSecurityProviderTest {
 
+    @Mock
+    private PolicyManager policyManager;
+
+    @InjectMocks
     private KeylessSecurityProvider securityProvider = new KeylessSecurityProvider();
 
     @Test
@@ -43,17 +58,20 @@ public class KeylessSecurityProviderTest {
     }
 
     @Test
-    public void shouldReturnSingletonSecurityPolicy() {
+    public void shouldReturnPolicies() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
 
-        SecurityPolicy securityPolicy1 = securityProvider.create(executionContext);
-        SecurityPolicy securityPolicy2 = securityProvider.create(executionContext);
+        DummyKeylessPolicy keylessPolicy = mock(DummyKeylessPolicy.class);
+        when(policyManager.create(StreamType.ON_REQUEST, KeylessSecurityProvider.KEYLESS_POLICY, null))
+                .thenReturn(keylessPolicy);
 
-        Assert.assertEquals(KeylessSecurityProvider.POLICY, securityPolicy1);
-        Assert.assertEquals(KeylessSecurityProvider.POLICY, securityPolicy2);
+        List<Policy> keylessProviderPolicies = securityProvider.policies(executionContext);
 
-        Assert.assertEquals(KeylessSecurityProvider.POLICY.policy(), KeylessSecurityProvider.KEYLESS_POLICY);
-        Assert.assertNull(KeylessSecurityProvider.POLICY.configuration(), null);
+        Assert.assertEquals(1, keylessProviderPolicies.size());
+
+        Policy policy = keylessProviderPolicies.iterator().next();
+        Assert.assertThat(policy, IsInstanceOf.instanceOf(DummyKeylessPolicy.class));
+        Assert.assertEquals(keylessPolicy, policy);
     }
 
     @Test

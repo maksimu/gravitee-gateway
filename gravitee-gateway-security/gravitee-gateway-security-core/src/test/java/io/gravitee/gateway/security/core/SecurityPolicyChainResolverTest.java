@@ -26,6 +26,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -80,15 +82,11 @@ public class SecurityPolicyChainResolverTest {
     @Test
     public void shouldReturnRequestPolicyChain_onRequest() {
         SecurityProvider securityProvider = mock(SecurityProvider.class);
-        SecurityPolicy securityPolicy = mock(SecurityPolicy.class);
-
         when(securityProvider.name()).thenReturn("my-provider");
-        when(securityPolicy.policy()).thenReturn("my-policy");
-        when(securityProvider.create(executionContext)).thenReturn(securityPolicy);
+        when(securityProvider.policies(executionContext)).thenReturn(Collections.emptyList());
 
         Policy policy = mock(Policy.class);
-        when(policyManager.create(StreamType.ON_REQUEST, securityPolicy.policy(),
-                securityPolicy.configuration())).thenReturn(policy);
+        when(policyManager.create(StreamType.ON_REQUEST, "my-policy", null)).thenReturn(policy);
         when(securityManager.resolve(request)).thenReturn(securityProvider);
 
         PolicyChain policyChain = securityPolicyChainResolver.resolve(StreamType.ON_REQUEST, request, response, executionContext);

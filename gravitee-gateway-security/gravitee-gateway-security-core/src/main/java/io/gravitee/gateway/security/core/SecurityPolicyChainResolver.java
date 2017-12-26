@@ -25,7 +25,6 @@ import io.gravitee.gateway.policy.impl.RequestPolicyChain;
 import io.gravitee.policy.api.PolicyResult;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -46,11 +45,9 @@ public class SecurityPolicyChainResolver extends AbstractPolicyChainResolver {
                 logger.debug("Security provider [{}] has been selected to secure incoming request {}",
                         securityProvider.name(), request.id());
 
-                SecurityPolicy securityPolicy = securityProvider.create(executionContext);
-                Policy policy = create(streamType, securityPolicy.policy(), securityPolicy.configuration());
+                List<Policy> policies = securityProvider.policies(executionContext);
 
-                return RequestPolicyChain.create(
-                        Collections.singletonList(policy), executionContext);
+                return RequestPolicyChain.create(policies, executionContext);
             }
 
             // No authentication method selected, must send a 401

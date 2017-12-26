@@ -17,8 +17,12 @@ package io.gravitee.gateway.security.keyless;
 
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.security.core.SecurityPolicy;
+import io.gravitee.gateway.policy.Policy;
+import io.gravitee.gateway.security.core.AbstractSecurityProvider;
 import io.gravitee.gateway.security.core.SecurityProvider;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A key-less {@link SecurityProvider} meaning that no authentication is required to access
@@ -27,21 +31,9 @@ import io.gravitee.gateway.security.core.SecurityProvider;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class KeylessSecurityProvider implements SecurityProvider {
+public class KeylessSecurityProvider extends AbstractSecurityProvider {
 
     static final String KEYLESS_POLICY = "key-less";
-
-    static final SecurityPolicy POLICY = new SecurityPolicy() {
-        @Override
-        public String policy() {
-            return KEYLESS_POLICY;
-        }
-
-        @Override
-        public String configuration() {
-            return null;
-        }
-    };
 
     @Override
     public boolean canHandle(Request request) {
@@ -59,7 +51,8 @@ public class KeylessSecurityProvider implements SecurityProvider {
     }
 
     @Override
-    public SecurityPolicy create(ExecutionContext executionContext) {
-        return POLICY;
+    public List<Policy> policies(ExecutionContext executionContext) {
+        return Collections.singletonList(
+                create(KEYLESS_POLICY, configuration()));
     }
 }

@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.gateway.policy;
+package io.gravitee.gateway.security.core;
 
-import io.gravitee.gateway.api.stream.ReadWriteStream;
+import io.gravitee.gateway.policy.Policy;
+import io.gravitee.gateway.policy.PolicyManager;
+import io.gravitee.gateway.policy.StreamType;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface Policy {
+public abstract class AbstractSecurityProvider implements SecurityProvider {
 
-    default void onRequest(Object ... args) throws PolicyException {}
+    @Autowired
+    private PolicyManager policyManager;
 
-    default void onResponse(Object ... args) throws PolicyException {}
+    protected Policy create(String policy, String configuration) {
+        return policyManager.create(StreamType.ON_REQUEST, policy, configuration);
+    }
 
-    default ReadWriteStream<?> onRequestContent(Object ... args) throws PolicyException { return null; }
-
-    default ReadWriteStream<?> onResponseContent(Object ... args) throws PolicyException { return null; }
-
-    default boolean isStreamable() { return false; }
-
-    default boolean isRunnable() { return true; }
+    public void setPolicyManager(PolicyManager policyManager) {
+        this.policyManager = policyManager;
+    }
 }

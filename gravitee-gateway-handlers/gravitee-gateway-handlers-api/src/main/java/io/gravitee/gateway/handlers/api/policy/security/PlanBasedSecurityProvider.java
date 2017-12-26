@@ -18,8 +18,10 @@ package io.gravitee.gateway.handlers.api.policy.security;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
 import io.gravitee.gateway.handlers.api.definition.Plan;
-import io.gravitee.gateway.security.core.SecurityPolicy;
+import io.gravitee.gateway.policy.Policy;
 import io.gravitee.gateway.security.core.SecurityProvider;
+
+import java.util.List;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -30,7 +32,7 @@ public class PlanBasedSecurityProvider implements SecurityProvider {
     private final SecurityProvider wrapper;
     private final Plan plan;
 
-    public PlanBasedSecurityProvider(final SecurityProvider wrapper, final Plan plan) {
+    PlanBasedSecurityProvider(final SecurityProvider wrapper, final Plan plan) {
         this.wrapper = wrapper;
         this.plan = plan;
     }
@@ -51,8 +53,15 @@ public class PlanBasedSecurityProvider implements SecurityProvider {
     }
 
     @Override
-    public SecurityPolicy create(ExecutionContext executionContext) {
+    public String configuration() {
+        return (plan.getSecurityDefinition() != null) ?
+                plan.getSecurityDefinition() : wrapper.configuration();
+    }
+
+    @Override
+    public List<Policy> policies(ExecutionContext executionContext) {
         executionContext.setAttribute(ExecutionContext.ATTR_PLAN, plan.getId());
-        return wrapper.create(executionContext);
+
+        return wrapper.policies(executionContext);
     }
 }

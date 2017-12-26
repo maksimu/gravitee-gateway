@@ -18,6 +18,8 @@ package io.gravitee.gateway.security.core;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
 import io.gravitee.gateway.policy.Policy;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.List;
 
@@ -25,42 +27,32 @@ import java.util.List;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SecurityProvider {
+public class SecurityProviderTest {
 
-    /**
-     * The provider name.
-     *
-     * @return The provider name.
-     */
-    String name();
+    @Test
+    public void shouldReturnNullConfiguration() {
+        SecurityProvider provider = new SecurityProvider() {
+            @Override
+            public String name() {
+                return null;
+            }
 
-    /**
-     * Prevalence order between each authentication system.
-     *
-     * @return The order value.
-     */
-    int order();
+            @Override
+            public int order() {
+                return 0;
+            }
 
-    /**
-     * Security provider configuration.
-     *
-     * @return
-     */
-    default String configuration() { return null;}
+            @Override
+            public boolean canHandle(Request request) {
+                return false;
+            }
 
-    /**
-     * Check that the incoming HTTP request can be handle by the underlying authentication system.
-     *
-     * @param request Incoming HTTP request.
-     * @return Flag indicating that the incoming request can be handled by the authentication system.
-     */
-    boolean canHandle(Request request);
+            @Override
+            public List<Policy> policies(ExecutionContext executionContext) {
+                return null;
+            }
+        };
 
-    /**
-     * Policies which will be run for each request after security selection
-     * The "Security policy chain"
-     *
-     * @return
-     */
-    List<Policy> policies(ExecutionContext executionContext);
+        Assert.assertNull(provider.configuration());
+    }
 }
