@@ -28,8 +28,6 @@ import io.gravitee.repository.management.api.SubscriptionRepository;
 import io.gravitee.repository.management.model.Subscription;
 
 import java.util.Date;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -50,25 +48,19 @@ public class CheckSubscriptionPolicy extends AbstractPolicy {
         String plan = (String) executionContext.getAttribute(ExecutionContext.ATTR_PLAN);
         String clientId = (String) executionContext.getAttribute(CONTEXT_ATTRIBUTE_CLIENT_ID);
         try {
-            Set<Subscription> subscriptions = subscriptionRepository.findByPlanAndClientId(plan, clientId);
+            Subscription subscription = subscriptionRepository.findLastByPlanAndClientId(plan, clientId);
 
-            // There are many subscriptions but only one may be active
-            Iterator<Subscription> ite = subscriptions.iterator();
-            if (ite.hasNext()) {
-                Subscription current = ite.next();
-
-                if (current.getClientId().equals(clientId) &&
-                        (current.getEndingAt() == null ||
-                        current.getEndingAt().after(Date.from(request.timestamp())))) {
+            if (subscription != null &&
+                        subscription.getClientId().equals(clientId) &&
+                        (
+                                subscription.getEndingAt() == null ||
+                                subscription.getEndingAt().after(Date.from(request.timestamp())))) {
                     policyChain.doNext(request, response);
-                } else {
-                    // As per https://tools.ietf.org/html/rfc6749#section-4.1.2.1
-                    sendUnauthorized(policyChain, OAUTH2_ERROR_ACCESS_DENIED);
-                }
-            } else {
-                // As per https://tools.ietf.org/html/rfc6749#section-4.1.2.1
-                sendUnauthorized(policyChain, OAUTH2_ERROR_ACCESS_DENIED);
+                    return;
             }
+
+            // As per https://tools.ietf.org/html/rfc6749#section-4.1.2.1
+            sendUnauthorized(policyChain, OAUTH2_ERROR_ACCESS_DENIED);
         } catch (TechnicalException te) {
             // As per https://tools.ietf.org/html/rfc6749#section-4.1.2.1
             sendUnauthorized(policyChain, OAUTH2_ERROR_SERVER_ERROR);

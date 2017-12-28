@@ -17,8 +17,8 @@ package io.gravitee.gateway.handlers.api.policy.security;
 
 import io.gravitee.gateway.handlers.api.definition.Api;
 import io.gravitee.gateway.handlers.api.definition.Plan;
-import io.gravitee.gateway.security.core.SecurityProvider;
-import io.gravitee.gateway.security.core.SecurityProviderFilter;
+import io.gravitee.gateway.security.core.AuthenticationHandler;
+import io.gravitee.gateway.security.core.AuthenticationHandlerEnhancer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,35 +32,35 @@ import java.util.Optional;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class PlanBasedSecurityProviderFilter implements SecurityProviderFilter {
+public class PlanBasedAuthenticationHandlerEnhancer implements AuthenticationHandlerEnhancer {
 
-    private final Logger logger = LoggerFactory.getLogger(PlanBasedSecurityProviderFilter.class);
+    private final Logger logger = LoggerFactory.getLogger(PlanBasedAuthenticationHandlerEnhancer.class);
 
     @Autowired
     private Api api;
 
     @Override
-    public List<SecurityProvider> filter(List<SecurityProvider> securityProviders) {
+    public List<AuthenticationHandler> filter(List<AuthenticationHandler> securityProviders) {
         logger.debug("Filtering security providers according to published API's plans");
 
-        List<SecurityProvider> providers = new ArrayList<>();
+        List<AuthenticationHandler> providers = new ArrayList<>();
 
         // Look into all plans for required authentication providers.
         Collection<Plan> plans = api.getPlans();
-        securityProviders.stream().forEach(provider -> {
+        securityProviders.forEach(provider -> {
             Optional<Plan> first = plans
                     .stream()
                     .filter(plan -> provider.name().equalsIgnoreCase(plan.getSecurity()))
                     .findFirst();
             if (first.isPresent()) {
                 logger.debug("Security provider [{}] is required by, at least, one plan. Installing...", provider.name());
-                providers.add(new PlanBasedSecurityProvider(provider, first.get()));
+                providers.add(new PlanBasedAuthenticationHandler(provider, first.get()));
             }
         });
 
         if (! providers.isEmpty()) {
             logger.info("API [{} ({})] requires the following security providers:", api.getName(), api.getVersion());
-            providers.stream().forEach(authenticationProvider -> logger.info("\t* {}", authenticationProvider.name()));
+            providers.forEach(authenticationProvider -> logger.info("\t* {}", authenticationProvider.name()));
         } else {
             logger.warn("No security provider is provided for API [{} ({})]", api.getName(), api.getVersion());
         }

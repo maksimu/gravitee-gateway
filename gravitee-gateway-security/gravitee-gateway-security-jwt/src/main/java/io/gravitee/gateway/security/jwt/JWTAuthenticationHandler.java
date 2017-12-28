@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.gateway.security.oauth2;
+package io.gravitee.gateway.security.jwt;
 
 import io.gravitee.common.http.HttpHeaders;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.security.core.AbstractSecurityProvider;
-import io.gravitee.gateway.security.oauth2.policy.CheckSubscriptionPolicy;
+import io.gravitee.gateway.security.core.AuthenticationHandler;
+import io.gravitee.gateway.security.core.AuthenticationPolicy;
+import io.gravitee.gateway.security.core.PluginAuthenticationPolicy;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
@@ -31,13 +31,14 @@ import java.util.Optional;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class OAuth2SecurityProvider extends AbstractSecurityProvider {
+public class JWTAuthenticationHandler implements AuthenticationHandler {
 
-    static final String SECURITY_PROVIDER_OAUTH2 = "oauth2";
+    /**
+     * The name of the authentication handler, which is also the name of the policy to invoke for coherency.
+     */
+    static final String AUTHENTICATION_HANDLER_NAME = "jwt";
 
-    static final String OAUTH2_POLICY = "oauth2";
-
-    static final String BEARER_AUTHORIZATION_TYPE = "Bearer";
+    static final String BEARER_AUTHENTICATION_TYPE = "Bearer";
 
     @Override
     public boolean canHandle(Request request) {
@@ -49,20 +50,20 @@ public class OAuth2SecurityProvider extends AbstractSecurityProvider {
 
         Optional<String> authorizationBearerHeader = authorizationHeaders
                 .stream()
-                .filter(h -> StringUtils.startsWithIgnoreCase(h, BEARER_AUTHORIZATION_TYPE))
+                .filter(h -> StringUtils.startsWithIgnoreCase(h, BEARER_AUTHENTICATION_TYPE))
                 .findFirst();
 
         if (! authorizationBearerHeader.isPresent()) {
             return false;
         }
 
-        String accessToken = authorizationBearerHeader.get().substring(BEARER_AUTHORIZATION_TYPE.length()).trim();
+        String accessToken = authorizationBearerHeader.get().substring(BEARER_AUTHENTICATION_TYPE.length()).trim();
         return ! accessToken.isEmpty();
     }
 
     @Override
     public String name() {
-        return SECURITY_PROVIDER_OAUTH2;
+        return AUTHENTICATION_HANDLER_NAME;
     }
 
     @Override
@@ -71,17 +72,12 @@ public class OAuth2SecurityProvider extends AbstractSecurityProvider {
     }
 
     @Override
-    public String configuration() {
-        return null;
-    }
-
-    @Override
-    public List<Policy> policies(ExecutionContext executionContext) {
+    public List<AuthenticationPolicy> handle(ExecutionContext executionContext) {
         return Arrays.asList(
-                // First, validate the incoming access_token thanks to an OAuth2 authorization server
-                create(OAUTH2_POLICY, configuration()),
-
+                // First, validate the incoming jwt token
+                (PluginAuthenticationPolicy) () -> AUTHENTICATION_HANDLER_NAME
+                );
+                // TODO:
                 // Then, check that there is an existing subscription which is valid
-                new CheckSubscriptionPolicy());
     }
 }

@@ -18,17 +18,14 @@ package io.gravitee.gateway.security.oauth2;
 import io.gravitee.common.http.HttpHeaders;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.policy.PolicyManager;
-import io.gravitee.gateway.policy.StreamType;
+import io.gravitee.gateway.security.core.HookAuthenticationPolicy;
+import io.gravitee.gateway.security.core.PluginAuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationPolicy;
 import io.gravitee.gateway.security.oauth2.policy.CheckSubscriptionPolicy;
-import io.gravitee.gateway.security.oauth2.policy.DummyOAuth2Policy;
-import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Iterator;
@@ -42,20 +39,17 @@ import static org.mockito.Mockito.when;
  * @author GraviteeSource Team
  */
 @RunWith(MockitoJUnitRunner.class)
-public class OAuth2SecurityProviderTest {
-
-    @Mock
-    private PolicyManager policyManager;
+public class OAuth2AuthenticationHandlerTest {
 
     @InjectMocks
-    private OAuth2SecurityProvider securityProvider = new OAuth2SecurityProvider();
+    private OAuth2AuthenticationHandler authenticationHandler = new OAuth2AuthenticationHandler();
 
     @Test
     public void shouldNotHandleRequest_noAuthorizationHeader() {
         Request request = mock(Request.class);
         when(request.headers()).thenReturn(new HttpHeaders());
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertFalse(handle);
     }
 
@@ -67,7 +61,7 @@ public class OAuth2SecurityProviderTest {
 
         headers.add(HttpHeaders.AUTHORIZATION, "");
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertFalse(handle);
     }
 
@@ -79,7 +73,7 @@ public class OAuth2SecurityProviderTest {
 
         headers.add(HttpHeaders.AUTHORIZATION, "Basic xxx-xx-xxx-xx-xx");
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertFalse(handle);
     }
 
@@ -89,9 +83,9 @@ public class OAuth2SecurityProviderTest {
         Request request = mock(Request.class);
         when(request.headers()).thenReturn(headers);
 
-        headers.add(HttpHeaders.AUTHORIZATION, OAuth2SecurityProvider.BEARER_AUTHORIZATION_TYPE + " xxx-xx-xxx-xx-xx");
+        headers.add(HttpHeaders.AUTHORIZATION, OAuth2AuthenticationHandler.BEARER_AUTHORIZATION_TYPE + " xxx-xx-xxx-xx-xx");
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertTrue(handle);
     }
 
@@ -103,7 +97,7 @@ public class OAuth2SecurityProviderTest {
 
         headers.add(HttpHeaders.AUTHORIZATION, "BeaRer xxx-xx-xxx-xx-xx");
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertTrue(handle);
     }
 
@@ -113,9 +107,9 @@ public class OAuth2SecurityProviderTest {
         Request request = mock(Request.class);
         when(request.headers()).thenReturn(headers);
 
-        headers.add(HttpHeaders.AUTHORIZATION, OAuth2SecurityProvider.BEARER_AUTHORIZATION_TYPE + " ");
+        headers.add(HttpHeaders.AUTHORIZATION, OAuth2AuthenticationHandler.BEARER_AUTHORIZATION_TYPE + " ");
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertFalse(handle);
     }
 
@@ -123,26 +117,24 @@ public class OAuth2SecurityProviderTest {
     public void shouldReturnPolicies() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
 
-        DummyOAuth2Policy oauth2Policy = mock(DummyOAuth2Policy.class);
-        when(policyManager.create(StreamType.ON_REQUEST, OAuth2SecurityProvider.OAUTH2_POLICY, null))
-                .thenReturn(oauth2Policy);
-
-        List<Policy> oauth2ProviderPolicies = securityProvider.policies(executionContext);
+        List<AuthenticationPolicy> oauth2ProviderPolicies = authenticationHandler.handle(executionContext);
 
         Assert.assertEquals(2, oauth2ProviderPolicies.size());
+        Iterator<AuthenticationPolicy> policyIte = oauth2ProviderPolicies.iterator();
+        PluginAuthenticationPolicy policy = (PluginAuthenticationPolicy) policyIte.next();
+        Assert.assertEquals(OAuth2AuthenticationHandler.AUTHENTICATION_HANDLER_NAME, policy.name());
 
-        Iterator<Policy> policies = oauth2ProviderPolicies.iterator();
-        Assert.assertThat(policies.next(), IsInstanceOf.instanceOf(DummyOAuth2Policy.class));
-        Assert.assertThat(policies.next(), IsInstanceOf.instanceOf(CheckSubscriptionPolicy.class));
+        HookAuthenticationPolicy policy2 = (HookAuthenticationPolicy) policyIte.next();
+        Assert.assertEquals(CheckSubscriptionPolicy.class, policy2.clazz());
     }
 
     @Test
     public void shouldReturnName() {
-        Assert.assertEquals(OAuth2SecurityProvider.SECURITY_PROVIDER_OAUTH2, securityProvider.name());
+        Assert.assertEquals(OAuth2AuthenticationHandler.AUTHENTICATION_HANDLER_NAME, authenticationHandler.name());
     }
 
     @Test
     public void shouldReturnOrder() {
-        Assert.assertEquals(0, securityProvider.order());
+        Assert.assertEquals(0, authenticationHandler.order());
     }
 }

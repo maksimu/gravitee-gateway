@@ -18,9 +18,9 @@ package io.gravitee.gateway.security.apikey;
 import io.gravitee.common.http.GraviteeHttpHeader;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.security.core.AbstractSecurityProvider;
-import io.gravitee.gateway.security.core.SecurityProvider;
+import io.gravitee.gateway.security.core.PluginAuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,17 +29,16 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * An api-key based {@link SecurityProvider}.
+ * An api-key based {@link AuthenticationHandler}.
  *
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class ApiKeySecurityProvider extends AbstractSecurityProvider {
+public class ApiKeyAuthenticationHandler implements AuthenticationHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(ApiKeySecurityProvider.class);
+    private final Logger logger = LoggerFactory.getLogger(ApiKeyAuthenticationHandler.class);
 
     static final String API_KEY_POLICY = "api-key";
-    static final String API_KEY_POLICY_CONFIGURATION = "{}";
 
     @Value("${policy.api-key.header:" + GraviteeHttpHeader.X_GRAVITEE_API_KEY + "}")
     private String apiKeyHeader = GraviteeHttpHeader.X_GRAVITEE_API_KEY;
@@ -64,14 +63,9 @@ public class ApiKeySecurityProvider extends AbstractSecurityProvider {
     }
 
     @Override
-    public String configuration() {
-        return API_KEY_POLICY_CONFIGURATION;
-    }
-
-    @Override
-    public List<Policy> policies(ExecutionContext executionContext) {
+    public List<AuthenticationPolicy> handle(ExecutionContext executionContext) {
         return Collections.singletonList(
-                create(API_KEY_POLICY, configuration()));
+                (PluginAuthenticationPolicy) () -> API_KEY_POLICY);
     }
 
     private String lookForApiKey(Request request) {

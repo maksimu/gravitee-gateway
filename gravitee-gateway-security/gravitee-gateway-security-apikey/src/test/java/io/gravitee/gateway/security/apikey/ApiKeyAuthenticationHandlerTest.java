@@ -20,16 +20,12 @@ import io.gravitee.common.util.LinkedMultiValueMap;
 import io.gravitee.common.util.MultiValueMap;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.policy.PolicyManager;
-import io.gravitee.gateway.policy.StreamType;
-import io.gravitee.gateway.security.apikey.policy.DummyApiKeyPolicy;
-import org.hamcrest.core.IsInstanceOf;
+import io.gravitee.gateway.security.core.PluginAuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
@@ -43,13 +39,10 @@ import static org.mockito.Mockito.when;
  * @author GraviteeSource Team
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ApiKeySecurityProviderTest {
+public class ApiKeyAuthenticationHandlerTest {
 
     @InjectMocks
-    private ApiKeySecurityProvider securityProvider = new ApiKeySecurityProvider();
-
-    @Mock
-    private PolicyManager policyManager;
+    private ApiKeyAuthenticationHandler authenticationHandler = new ApiKeyAuthenticationHandler();
 
     @Test
     public void shouldNotHandleRequest() {
@@ -59,7 +52,7 @@ public class ApiKeySecurityProviderTest {
         MultiValueMap<String, String> parameters = mock(MultiValueMap.class);
         when(request.parameters()).thenReturn(parameters);
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertFalse(handle);
     }
 
@@ -70,7 +63,7 @@ public class ApiKeySecurityProviderTest {
         headers.set("X-Gravitee-Api-Key", "xxxxx-xxxx-xxxxx");
         when(request.headers()).thenReturn(headers);
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertTrue(handle);
     }
 
@@ -85,7 +78,7 @@ public class ApiKeySecurityProviderTest {
         HttpHeaders headers = new HttpHeaders();
         when(request.headers()).thenReturn(headers);
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertTrue(handle);
     }
 
@@ -93,26 +86,21 @@ public class ApiKeySecurityProviderTest {
     public void shouldReturnPolicies() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
 
-        DummyApiKeyPolicy apiKeyPolicy = mock(DummyApiKeyPolicy.class);
-        when(policyManager.create(StreamType.ON_REQUEST, ApiKeySecurityProvider.API_KEY_POLICY, ApiKeySecurityProvider.API_KEY_POLICY_CONFIGURATION))
-                .thenReturn(apiKeyPolicy);
-
-        List<Policy> apikeyProviderPolicies = securityProvider.policies(executionContext);
+        List<AuthenticationPolicy> apikeyProviderPolicies = authenticationHandler.handle(executionContext);
 
         Assert.assertEquals(1, apikeyProviderPolicies.size());
 
-        Policy policy = apikeyProviderPolicies.iterator().next();
-        Assert.assertThat(policy, IsInstanceOf.instanceOf(DummyApiKeyPolicy.class));
-        Assert.assertEquals(apiKeyPolicy, policy);
+        PluginAuthenticationPolicy policy = (PluginAuthenticationPolicy) apikeyProviderPolicies.iterator().next();
+        Assert.assertEquals(policy.name(), ApiKeyAuthenticationHandler.API_KEY_POLICY);
     }
 
     @Test
     public void shouldReturnName() {
-        Assert.assertEquals("api_key", securityProvider.name());
+        Assert.assertEquals("api_key", authenticationHandler.name());
     }
 
     @Test
     public void shouldReturnOrder() {
-        Assert.assertEquals(500, securityProvider.order());
+        Assert.assertEquals(500, authenticationHandler.order());
     }
 }

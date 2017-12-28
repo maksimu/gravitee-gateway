@@ -17,7 +17,7 @@ package io.gravitee.gateway.handlers.api.policy.security;
 
 import io.gravitee.gateway.handlers.api.definition.Api;
 import io.gravitee.gateway.handlers.api.definition.Plan;
-import io.gravitee.gateway.security.core.SecurityProvider;
+import io.gravitee.gateway.security.core.AuthenticationHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -34,9 +34,9 @@ import static org.mockito.Mockito.when;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class PlanBasedSecurityProviderFilterTest {
+public class PlanBasedAuthenticationHandlerEnhancerTest {
 
-    private PlanBasedSecurityProviderFilter securityProviderFilter;
+    private PlanBasedAuthenticationHandlerEnhancer authenticationHandlerEnhancer;
 
     @Mock
     private Api api;
@@ -45,8 +45,8 @@ public class PlanBasedSecurityProviderFilterTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
-        securityProviderFilter = new PlanBasedSecurityProviderFilter();
-        securityProviderFilter.setApi(api);
+        authenticationHandlerEnhancer = new PlanBasedAuthenticationHandlerEnhancer();
+        authenticationHandlerEnhancer.setApi(api);
 
         when(api.getName()).thenReturn("My API");
         when(api.getVersion()).thenReturn("v1");
@@ -54,11 +54,11 @@ public class PlanBasedSecurityProviderFilterTest {
 
     @Test
     public void shouldNotResolveKeylessPolicy_becauseNoPlan() {
-        SecurityProvider SecurityProvider = mock(SecurityProvider.class);
-        when(SecurityProvider.name()).thenReturn("keyless");
+        AuthenticationHandler authenticationHandler = mock(AuthenticationHandler.class);
+        when(authenticationHandler.name()).thenReturn("keyless");
 
-        List<SecurityProvider> SecurityProviders =
-                securityProviderFilter.filter(Collections.singletonList(SecurityProvider));
+        List<AuthenticationHandler> SecurityProviders =
+                authenticationHandlerEnhancer.filter(Collections.singletonList(authenticationHandler));
 
         assertNotNull(SecurityProviders);
         assertTrue(SecurityProviders.isEmpty());
@@ -66,15 +66,15 @@ public class PlanBasedSecurityProviderFilterTest {
 
     @Test
     public void shouldNotResolveKeylessPolicy_becauseOnePlanApikey() {
-        SecurityProvider SecurityProvider = mock(SecurityProvider.class);
-        when(SecurityProvider.name()).thenReturn("keyless");
+        AuthenticationHandler authenticationHandler = mock(AuthenticationHandler.class);
+        when(authenticationHandler.name()).thenReturn("keyless");
 
         Plan plan1 = new Plan();
         plan1.setSecurity("apikey");
         when(api.getPlans()).thenReturn(Collections.singletonList(plan1));
 
-        List<SecurityProvider> SecurityProviders =
-                securityProviderFilter.filter(Collections.singletonList(SecurityProvider));
+        List<AuthenticationHandler> SecurityProviders =
+                authenticationHandlerEnhancer.filter(Collections.singletonList(authenticationHandler));
 
         assertNotNull(SecurityProviders);
         assertTrue(SecurityProviders.isEmpty());
@@ -82,15 +82,15 @@ public class PlanBasedSecurityProviderFilterTest {
 
     @Test
     public void shouldResolveKeylessPolicy_becauseOnePlanKeyless() {
-        SecurityProvider SecurityProvider = mock(SecurityProvider.class);
-        when(SecurityProvider.name()).thenReturn("keyless");
+        AuthenticationHandler authenticationHandler = mock(AuthenticationHandler.class);
+        when(authenticationHandler.name()).thenReturn("keyless");
 
         Plan plan1 = new Plan();
         plan1.setSecurity("keyless");
         when(api.getPlans()).thenReturn(Collections.singletonList(plan1));
 
-        List<SecurityProvider> SecurityProviders =
-                securityProviderFilter.filter(Collections.singletonList(SecurityProvider));
+        List<AuthenticationHandler> SecurityProviders =
+                authenticationHandlerEnhancer.filter(Collections.singletonList(authenticationHandler));
 
         assertNotNull(SecurityProviders);
         assertFalse(SecurityProviders.isEmpty());

@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.gateway.security.apikey.policy;
+package io.gravitee.gateway.security.core;
 
-import io.gravitee.gateway.policy.AbstractPolicy;
+import java.util.List;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class DummyApiKeyPolicy extends AbstractPolicy {
+@FunctionalInterface
+public interface AuthenticationHandlerEnhancer {
+
+    List<AuthenticationHandler> filter(List<AuthenticationHandler> securityProviders);
 }

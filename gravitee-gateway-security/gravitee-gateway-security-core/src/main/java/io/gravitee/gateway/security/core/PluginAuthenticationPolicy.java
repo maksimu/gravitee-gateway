@@ -15,25 +15,21 @@
  */
 package io.gravitee.gateway.security.core;
 
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.policy.PolicyManager;
-import io.gravitee.gateway.policy.StreamType;
-import org.springframework.beans.factory.annotation.Autowired;
-
 /**
+ * An {@link AuthenticationPolicy} based on an externalized policy plugin.
+ *
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public abstract class AbstractSecurityProvider implements SecurityProvider {
+public interface PluginAuthenticationPolicy extends AuthenticationPolicy {
 
-    @Autowired
-    private PolicyManager policyManager;
+    /**
+     * The name of the policy to invoke.
+     */
+    String name();
 
-    protected Policy create(String policy, String configuration) {
-        return policyManager.create(StreamType.ON_REQUEST, policy, configuration);
-    }
-
-    public void setPolicyManager(PolicyManager policyManager) {
-        this.policyManager = policyManager;
-    }
+    /**
+     * The configuration (json) of the policy.
+     */
+    default String configuration() { return null; };
 }

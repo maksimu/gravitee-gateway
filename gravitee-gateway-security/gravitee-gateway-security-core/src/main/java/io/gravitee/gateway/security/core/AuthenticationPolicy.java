@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.gateway.security.keyless.policy;
-
-import io.gravitee.gateway.policy.AbstractPolicy;
+package io.gravitee.gateway.security.core;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class DummyKeylessPolicy extends AbstractPolicy {
+public interface AuthenticationPolicy {
 }

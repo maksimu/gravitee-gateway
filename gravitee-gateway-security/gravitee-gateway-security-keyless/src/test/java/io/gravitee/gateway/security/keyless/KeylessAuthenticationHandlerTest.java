@@ -18,16 +18,12 @@ package io.gravitee.gateway.security.keyless;
 import io.gravitee.common.http.HttpHeaders;
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.policy.PolicyManager;
-import io.gravitee.gateway.policy.StreamType;
-import io.gravitee.gateway.security.keyless.policy.DummyKeylessPolicy;
-import org.hamcrest.core.IsInstanceOf;
+import io.gravitee.gateway.security.core.PluginAuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
@@ -40,20 +36,17 @@ import static org.mockito.Mockito.when;
  * @author GraviteeSource Team
  */
 @RunWith(MockitoJUnitRunner.class)
-public class KeylessSecurityProviderTest {
-
-    @Mock
-    private PolicyManager policyManager;
+public class KeylessAuthenticationHandlerTest {
 
     @InjectMocks
-    private KeylessSecurityProvider securityProvider = new KeylessSecurityProvider();
+    private KeylessAuthenticationHandler authenticationHandler = new KeylessAuthenticationHandler();
 
     @Test
     public void shouldHandleRequest() {
         Request request = mock(Request.class);
         when(request.headers()).thenReturn(new HttpHeaders());
 
-        boolean handle = securityProvider.canHandle(request);
+        boolean handle = authenticationHandler.canHandle(request);
         Assert.assertTrue(handle);
     }
 
@@ -61,26 +54,21 @@ public class KeylessSecurityProviderTest {
     public void shouldReturnPolicies() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
 
-        DummyKeylessPolicy keylessPolicy = mock(DummyKeylessPolicy.class);
-        when(policyManager.create(StreamType.ON_REQUEST, KeylessSecurityProvider.KEYLESS_POLICY, null))
-                .thenReturn(keylessPolicy);
-
-        List<Policy> keylessProviderPolicies = securityProvider.policies(executionContext);
+        List<AuthenticationPolicy> keylessProviderPolicies = authenticationHandler.handle(executionContext);
 
         Assert.assertEquals(1, keylessProviderPolicies.size());
 
-        Policy policy = keylessProviderPolicies.iterator().next();
-        Assert.assertThat(policy, IsInstanceOf.instanceOf(DummyKeylessPolicy.class));
-        Assert.assertEquals(keylessPolicy, policy);
+        PluginAuthenticationPolicy policy = (PluginAuthenticationPolicy) keylessProviderPolicies.iterator().next();
+        Assert.assertEquals(policy.name(), KeylessAuthenticationHandler.KEYLESS_POLICY);
     }
 
     @Test
     public void shouldReturnName() {
-        Assert.assertEquals("key_less", securityProvider.name());
+        Assert.assertEquals("key_less", authenticationHandler.name());
     }
 
     @Test
     public void shouldReturnOrder() {
-        Assert.assertEquals(1000, securityProvider.order());
+        Assert.assertEquals(1000, authenticationHandler.order());
     }
 }

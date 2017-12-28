@@ -21,36 +21,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * This class is used to load multiple implementations of {@link SecurityProvider}.
+ * This class is used to load multiple implementations of {@link AuthenticationHandler}.
  * Loaded implementations are then filtered according to published plan to select only accurate security
  * authentication implementations.
  *
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class SecurityManager {
+public class SecurityProviderManager {
 
-    private final Logger logger = LoggerFactory.getLogger(SecurityManager.class);
+    private final Logger logger = LoggerFactory.getLogger(SecurityProviderManager.class);
 
     @Autowired
     private SecurityProviderLoader securityProviderLoader;
 
     @Autowired(required = false)
-    private SecurityProviderFilter securityProviderFilter;
+    private AuthenticationHandlerEnhancer securityProviderFilter;
 
-    private List<SecurityProvider> securityProviders;
+    private List<AuthenticationHandler> securityProviders;
 
     /**
-     * Get an {@link SecurityProvider} from the incoming HTTP request.
+     * Get an {@link AuthenticationHandler} from the incoming HTTP request.
      * @param request Incoming HTTP request.
      * @return The security provider to apply got the incoming request.
      */
-    public SecurityProvider resolve(Request request) {
-        for(SecurityProvider securityProvider : getSecurityProviders()) {
+    public AuthenticationHandler resolve(Request request) {
+        for(AuthenticationHandler securityProvider : securityProviders) {
             if (securityProvider.canHandle(request)) {
                 return securityProvider;
             }
@@ -59,23 +60,24 @@ public class SecurityManager {
         return null;
     }
 
-    public List<SecurityProvider> getSecurityProviders() {
-        if (securityProviders == null) {
-            logger.debug("Loading security providers...");
-            List<SecurityProvider> availableSecurityProviders =
-                    securityProviderLoader.getSecurityProviders();
+    @PostConstruct
+    public void initializeSecurityProviders() {
+        logger.debug("Loading security providers...");
+        List<AuthenticationHandler> availableSecurityProviders =
+                securityProviderLoader.getSecurityProviders();
 
-            // Sort by order
-            Collections.sort(availableSecurityProviders, (one, other) -> one.order() - other.order());
+        // Sort by order
+        Collections.sort(availableSecurityProviders, (one, other) -> one.order() - other.order());
 
-            // Filter security providers if a filter is defined
-            if (securityProviderFilter != null) {
-                securityProviders = securityProviderFilter.filter(availableSecurityProviders);
-            } else {
-                securityProviders = availableSecurityProviders;
-            }
+        // Filter security providers if a filter is defined
+        if (securityProviderFilter != null) {
+            securityProviders = securityProviderFilter.filter(availableSecurityProviders);
+        } else {
+            securityProviders = availableSecurityProviders;
         }
+    }
 
+    public List<AuthenticationHandler> getSecurityProviders() {
         return securityProviders;
     }
 
@@ -83,7 +85,7 @@ public class SecurityManager {
         this.securityProviderLoader = securityProviderLoader;
     }
 
-    public void setSecurityProviderFilter(SecurityProviderFilter securityProviderFilter) {
+    public void setSecurityProviderFilter(AuthenticationHandlerEnhancer securityProviderFilter) {
         this.securityProviderFilter = securityProviderFilter;
     }
 }

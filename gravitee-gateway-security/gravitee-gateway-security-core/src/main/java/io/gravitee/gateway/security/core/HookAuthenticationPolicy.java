@@ -15,14 +15,11 @@
  */
 package io.gravitee.gateway.security.core;
 
-import java.util.List;
-
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-@FunctionalInterface
-public interface SecurityProviderFilter {
+public interface HookAuthenticationPolicy extends AuthenticationPolicy {
 
-    List<SecurityProvider> filter(List<SecurityProvider> securityProviders);
+    Class clazz();
 }

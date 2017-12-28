@@ -17,7 +17,6 @@ package io.gravitee.gateway.security.core;
 
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.policy.Policy;
 
 import java.util.List;
 
@@ -25,7 +24,7 @@ import java.util.List;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SecurityProvider {
+public interface AuthenticationHandler {
 
     /**
      * The provider name.
@@ -42,13 +41,6 @@ public interface SecurityProvider {
     int order();
 
     /**
-     * Security provider configuration.
-     *
-     * @return
-     */
-    default String configuration() { return null;}
-
-    /**
      * Check that the incoming HTTP request can be handle by the underlying authentication system.
      *
      * @param request Incoming HTTP request.
@@ -57,10 +49,12 @@ public interface SecurityProvider {
     boolean canHandle(Request request);
 
     /**
-     * Policies which will be run for each request after security selection
-     * The "Security policy chain"
+     * Policies which will be run for each request after authentication method selection
+     * The "Security policy chain" may be composed of
+     * * {@link PluginAuthenticationPolicy}: a policy based on a plugin
+     * * {@link HookAuthenticationPolicy}: a policy based on a class defining the behavior.
      *
-     * @return
+     * @return A chain of {@link AuthenticationPolicy}
      */
-    List<Policy> policies(ExecutionContext executionContext);
+    List<AuthenticationPolicy> handle(ExecutionContext executionContext);
 }

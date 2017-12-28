@@ -13,55 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.gateway.handlers.api.policy.security;
+package io.gravitee.gateway.security.keyless;
 
 import io.gravitee.gateway.api.ExecutionContext;
 import io.gravitee.gateway.api.Request;
-import io.gravitee.gateway.handlers.api.definition.Plan;
-import io.gravitee.gateway.policy.Policy;
-import io.gravitee.gateway.security.core.SecurityProvider;
+import io.gravitee.gateway.security.core.PluginAuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationPolicy;
+import io.gravitee.gateway.security.core.AuthenticationHandler;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
+ * A key-less {@link AuthenticationHandler} meaning that no authentication is required to access
+ * the public service.
+ *
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class PlanBasedSecurityProvider implements SecurityProvider {
+public class KeylessAuthenticationHandler implements AuthenticationHandler {
 
-    private final SecurityProvider wrapper;
-    private final Plan plan;
-
-    PlanBasedSecurityProvider(final SecurityProvider wrapper, final Plan plan) {
-        this.wrapper = wrapper;
-        this.plan = plan;
-    }
+    static final String KEYLESS_POLICY = "key-less";
 
     @Override
     public boolean canHandle(Request request) {
-        return wrapper.canHandle(request);
+        return true;
     }
 
     @Override
     public String name() {
-        return wrapper.name();
+        return "key_less";
     }
 
     @Override
     public int order() {
-        return wrapper.order();
+        return 1000;
     }
 
     @Override
-    public String configuration() {
-        return (plan.getSecurityDefinition() != null) ?
-                plan.getSecurityDefinition() : wrapper.configuration();
-    }
-
-    @Override
-    public List<Policy> policies(ExecutionContext executionContext) {
-        executionContext.setAttribute(ExecutionContext.ATTR_PLAN, plan.getId());
-
-        return wrapper.policies(executionContext);
+    public List<AuthenticationPolicy> handle(ExecutionContext executionContext) {
+        return Collections.singletonList(
+                (PluginAuthenticationPolicy) () -> KEYLESS_POLICY);
     }
 }

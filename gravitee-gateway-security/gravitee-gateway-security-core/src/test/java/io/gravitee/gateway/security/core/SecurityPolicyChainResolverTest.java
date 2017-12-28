@@ -41,7 +41,7 @@ public class SecurityPolicyChainResolverTest {
     private SecurityPolicyChainResolver securityPolicyChainResolver;
 
     @Mock
-    private SecurityManager securityManager;
+    private SecurityProviderManager securityManager;
 
     @Mock
     private PolicyManager policyManager;
@@ -81,9 +81,9 @@ public class SecurityPolicyChainResolverTest {
 
     @Test
     public void shouldReturnRequestPolicyChain_onRequest() {
-        SecurityProvider securityProvider = mock(SecurityProvider.class);
+        AuthenticationHandler securityProvider = mock(AuthenticationHandler.class);
         when(securityProvider.name()).thenReturn("my-provider");
-        when(securityProvider.policies(executionContext)).thenReturn(Collections.emptyList());
+        when(securityProvider.handle(executionContext)).thenReturn(Collections.emptyList());
 
         Policy policy = mock(Policy.class);
         when(policyManager.create(StreamType.ON_REQUEST, "my-policy", null)).thenReturn(policy);
